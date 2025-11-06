@@ -238,7 +238,7 @@
             <div class="relative">
                 <div id="proto-track-container" class="overflow-hidden">
                     <div id="proto-track" class="flex gap-6 items-start p-4">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="absolute -right-2 top-1/2 transform -translate-y-1/2 flex flex-col gap-3">
@@ -284,10 +284,10 @@
         </div>
 
         <div class="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <img src="https://images.unsplash.com/photo-1549880338-65ddcdfd017b?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="">
-            <img src="https://images.unsplash.com/photo-1542159670-f421f1c7d23a?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="">
-            <img src="https://images.unsplash.com/photo-1587375253383-e189874a7b73?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="">
-            <img src="https://images.unsplash.com/photo-1517404215705-bf347900b998?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="">
+            <img src="https://images.unsplash.com/photo-1549880338-65ddcdfd017b?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="Thunder Wing on Track">
+            <img src="https://images.unsplash.com/photo-1542159670-f421f1c7d23a?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="Apex Dominator 4x4">
+            <img src="https://images.unsplash.com/photo-1587375253383-e189874a7b73?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="Stormback Prototype">
+            <img src="https://images.unsplash.com/photo-1517404215705-bf347900b998?auto=format&fit=crop&w=900&q=80" class="w-full h-48 object-cover rounded-lg cursor-pointer gallery-item" alt="Shadow Talon Detail">
         </div>
     </section>
 
@@ -402,6 +402,23 @@
         tick();
     }
 
+    // ========== LIGHTBOX / GALLERY ==========
+    function openLightbox(src, caption) {
+        const lb = $('#lightbox');
+        $('#lb-img').src = src;
+        $('#lb-caption').textContent = caption;
+        lb.classList.remove('hidden');
+        lb.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+        const lb = $('#lightbox');
+        lb.classList.add('hidden');
+        lb.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
     // ========== RENDER PROTOTYPES ==========
     function renderPrototypes(){
         const track = $('#proto-track');
@@ -452,42 +469,56 @@
                 });
             }
         }
+        // Wait for elements to render before calculating widths for Draggable
         setTimeout(initDraggable, 120);
         window.addEventListener('resize', initDraggable);
     }
 
-    // ========== TIMELINE ==========
+    // ========== TIMELINE (Horizontal Scroll) ==========
     function renderTimeline(){
         const t = $('#timeline-track');
         TIMELINE_STEPS.forEach((s, i)=>{
             const el = document.createElement('div');
-            el.className = 'min-w-[320px] p-6 rounded-2xl glass gold-border';
+            // Tailwind classes to ensure items are fixed width for horizontal scroll
+            el.className = 'min-w-[320px] p-6 rounded-2xl glass gold-border'; 
             el.innerHTML = `<div class="text-gold-acc font-bold mb-2">${s.title}</div><div class="text-gray-300">${s.txt}</div>`;
             t.appendChild(el);
         });
-        // horizontal scroll using GSAP
+        
+        // Horizontal scroll using GSAP ScrollTrigger
         gsap.registerPlugin(ScrollTrigger);
+        
+        // Wait for elements to be fully rendered before calculating scroll width
         setTimeout(()=>{
             const totalW = t.scrollWidth;
-            gsap.to(t, {
-                x: () => -(totalW - document.documentElement.clientWidth + 48),
-                ease: 'none',
-                scrollTrigger: {
-                    trigger: t,
-                    start: "top top",
-                    end: () => `+=${totalW}`,
-                    scrub: 0.6,
-                    pin: true,
-                    anticipatePin: 1
-                }
-            });
+            const containerW = t.parentElement.clientWidth;
+
+            // Only initialize horizontal scrolling if content overflows the container
+            if (totalW > containerW) {
+                gsap.to(t, {
+                    // Animate the 'x' position of the track to the left, 
+                    // until the end of the track meets the right edge of the viewport (+ 48px padding)
+                    x: () => -(totalW - containerW + 48), 
+                    ease: 'none',
+                    scrollTrigger: {
+                        trigger: t.parentElement, // Trigger based on the parent of the track
+                        start: "top top", // Pin starts when the top of the trigger hits the top of the viewport
+                        // The duration of the scroll (how far the user has to scroll vertically) 
+                        // is proportional to the width of the content
+                        end: () => `+=${totalW}`, 
+                        scrub: 0.6, // Smoothly link scroll position to animation progress
+                        pin: true, // Pin the entire section while scrolling horizontally
+                        anticipatePin: 1
+                    }
+                });
+            }
         }, 200);
     }
 
     // ========== RENDER TEAM ==========
     function renderTeam(){
         const container = document.querySelector('#team .grid');
-        if (!container) return; // Ensure the container exists
+        if (!container) return; 
 
         TEAM.forEach((member, i) => {
             const el = document.createElement('div');
@@ -525,134 +556,141 @@
         `;
 
         modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
     }
 
     function closeMemberModal() {
         $('#member-modal').classList.add('hidden');
-        $('#member-modal').classList.remove('flex');
+        $('#member-modal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    // ========== AUDIO (Howler.js) ==========
+    const audio = new Howl({
+        src: ['https://pw-media.s3.amazonaws.com/epic-track.mp3'], // Placeholder URL, replace with actual audio file
+        loop: true,
+        volume: 0.6
+    });
+    let isPlaying = false;
+    const playBtn = $('#play-audio');
+    const playIcon = '<svg data-lucide="play" class="w-5 h-5 text-gold-acc"></svg>';
+    const pauseIcon = '<svg data-lucide="pause" class="w-5 h-5 text-gold-acc"></svg>';
+
+    function toggleAudio() {
+        if (isPlaying) {
+            audio.pause();
+            playBtn.innerHTML = playIcon;
+        } else {
+            audio.play();
+            playBtn.innerHTML = pauseIcon;
+        }
+        isPlaying = !isPlaying;
+        lucide.createIcons();
     }
 
-    // ========== LIGHTBOX (Gallery/Prototypes) ==========
-    function openLightbox(src, caption) {
-        $('#lb-img').src = src;
-        $('#lb-caption').textContent = caption;
-        $('#lightbox').classList.remove('hidden');
-        $('#lightbox').classList.add('flex');
-    }
 
-    function closeLightbox() {
-        $('#lightbox').classList.add('hidden');
-        $('#lightbox').classList.remove('flex');
-    }
+    // ========== GSAP Animations and Event Handlers (DOM Ready) ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        gsap.registerPlugin(ScrollTrigger, Draggable, InertiaPlugin);
 
-    // ========== INITIALISATION & EVENT LISTENERS ==========
-    function initApp() {
-        // 1. Initial Data Rendering
+        // --- Core Renderings ---
+        startParticles();
         renderPrototypes();
-        renderTimeline();
+        renderTimeline(); // This is the corrected function
         renderTeam();
 
-        // 2. Core UI Interactivity
-        startParticles();
-        VanillaTilt.init($all('.card-hover, #vehicle-card'), { max: 5, speed: 400, glare: true, 'max-glare': 0.1 });
+        // --- Animations ---
+        // Hero Text Split
+        gsap.timeline()
+            .to("#split-1 span", { y: "0%", duration: 1, stagger: 0.05, ease: "power3.out" }, 0.5)
+            .to("#split-2 span", { y: "0%", duration: 1, stagger: 0.05, ease: "power3.out" }, 0.8);
 
-        // 3. Close Lightbox/Modals
-        $('#lb-close').addEventListener('click', closeLightbox);
-        $('#member-close').addEventListener('click', closeMemberModal);
-        $('#lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') closeLightbox(); });
-        $('#member-modal').addEventListener('click', (e) => { if (e.target.id === 'member-modal') closeMemberModal(); });
-
-        // 4. Gallery & Prototype Thumbnails
-        $all('.gallery-item, .proto-thumb').forEach(img => {
-            img.addEventListener('click', (e) => {
-                const src = e.target.getAttribute('data-src') || e.target.src.replace('500&q=80', '1400&q=80').replace('900&q=80', '1400&q=80'); // Best guess for high-res
-                const caption = e.target.alt || "Peregrine Warriors Vehicle";
-                openLightbox(src, caption);
-            });
-        });
-
-        // 5. Scroll Animations
-        gsap.registerPlugin(ScrollTrigger);
-        // Animate split header text
-        gsap.fromTo('#split-1 span', { y: '110%' }, { y: '0%', duration: 1.2, ease: 'power3.out', stagger: 0.05 });
-        gsap.fromTo('#split-2 span', { y: '110%' }, { y: '0%', duration: 1.2, ease: 'power3.out', delay: 0.2, stagger: 0.05 });
-
-        // Animate on scroll (data-animate elements)
+        // On-Scroll Fade-In
         $all('[data-animate]').forEach(el => {
-            gsap.fromTo(el, { opacity: 0, y: 28 }, {
-                opacity: 1, y: 0, duration: 0.85, ease: 'power3.out',
-                scrollTrigger: { trigger: el, start: "top 90%", toggleActions: "play none none none" }
+            ScrollTrigger.create({
+                trigger: el,
+                start: "top 85%",
+                onEnter: () => el.classList.add('animated-visible'),
+                once: true
             });
         });
 
-        // Animate progress bars
+        // Progress Bar Fill
         $all('.progress-fill').forEach(bar => {
-            const fill = bar.getAttribute('data-fill');
+            const fillValue = bar.getAttribute('data-fill');
             gsap.to(bar, {
-                width: `${fill}%`,
+                width: `${fillValue}%`,
                 duration: 1.5,
-                ease: 'power3.out',
-                scrollTrigger: { trigger: bar.closest('[data-animate]'), start: "top 80%", toggleActions: "play none none none" }
+                ease: 'power2.out',
+                scrollTrigger: {
+                    trigger: bar.parentElement,
+                    start: "top 80%",
+                    once: true
+                }
             });
         });
 
-        // 6. Header/UI Controls
-        // 'Top' button visibility
-        window.addEventListener('scroll', () => {
-            const topBtn = $('#top-btn');
-            if (window.scrollY > 400) { topBtn.classList.remove('hidden'); } else { topBtn.classList.add('hidden'); }
-        });
-        $('#top-btn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-
-        // Scroll to section for navigation links
+        // --- Event Listeners ---
+        // Navbar Links Smooth Scroll
         $all('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const targetId = e.target.getAttribute('href');
-                document.querySelector(targetId).scrollIntoView({ behavior: 'smooth' });
+                const targetId = link.getAttribute('href');
+                gsap.to(window, { duration: 1, scrollTo: targetId, ease: 'power3.out' });
             });
         });
-
-        // Brochure download logic (Placeholder)
-        $('#brochure-btn').addEventListener('click', () => {
-            alert('Brochure download initiated! (Placeholder for PDF generation)');
-            // In a real app, you'd use jsPDF or a pre-generated file here.
+        
+        // Top Button
+        $('#top-btn').addEventListener('click', () => {
+            gsap.to(window, { duration: 1, scrollTo: 0, ease: 'power3.out' });
         });
 
-        // Audio Playback
-        const sound = new Howl({
-            src: ['https://s3-us-west-2.amazonaws.com/s.cdpn.io/16327/ambient_loop_1.mp3'], // Placeholder music
-            loop: true,
-            volume: 0.3
-        });
-        let isPlaying = false;
+        // Audio Toggle
+        playBtn.addEventListener('click', toggleAudio);
 
-        $('#play-audio').addEventListener('click', () => {
-            const icon = $('#play-audio svg');
-            if (isPlaying) {
-                sound.pause();
-                icon.setAttribute('data-lucide', 'play');
-            } else {
-                sound.play();
-                icon.setAttribute('data-lucide', 'pause');
+        // Lightbox Close Listeners
+        $('#lb-close').addEventListener('click', closeLightbox);
+        $all('.proto-thumb').forEach(thumb => {
+            thumb.addEventListener('click', (e) => {
+                openLightbox(e.target.getAttribute('data-src'), e.target.getAttribute('alt'));
+            });
+        });
+        $all('.gallery-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                openLightbox(e.target.src, e.target.alt || "Action Shot");
+            });
+        });
+        
+        // Member Modal Close Listener
+        $('#member-close').addEventListener('click', closeMemberModal);
+        $('#member-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'member-modal') {
+                closeMemberModal();
             }
-            lucide.createIcons(); // Re-render icon
-            isPlaying = !isPlaying;
         });
-
-        // Create Lucide Icons after content is rendered
-        lucide.createIcons();
-
-        // Contact Form Submission (Placeholder)
-        $('#contact-form').addEventListener('submit', function(e) {
+        
+        // --- Contact Form ---
+        const contactForm = $('#contact-form');
+        contactForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            alert('Message Sent! (Placeholder for backend submission)');
-        });
-    }
+            const name = $('#name').value;
+            const email = $('#email').value;
+            const subject = $('#subject').value;
+            const message = $('#message').value;
 
-    // Wait for all external scripts to load
-    document.addEventListener('DOMContentLoaded', initApp);
+            // Simple mailto link creation
+            const mailto = `mailto:peregrinewarriors@school.edu?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`)}`;
+            
+            // In a real application, you'd use fetch() to send the data to a server.
+            // For a static site, we just open the mailto link.
+            window.location.href = mailto;
+        });
+
+        // --- Misc ---
+        VanillaTilt.init($all("#vehicle-card"), { max: 5, speed: 400, "data-tilt-scale": 1.01 });
+        lucide.createIcons(); // Initialize Lucide icons
+    });
 </script>
 </body>
 </html>
